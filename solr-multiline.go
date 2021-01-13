@@ -1,4 +1,4 @@
-package logstash
+package solr
 
 import (
 	//"errors"
