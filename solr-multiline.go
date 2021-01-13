@@ -39,7 +39,7 @@ func NewSolrAdapter(route *router.Route) (a router.LogAdapter, err error) {
 	if hostname == "" {
 		hostname = "localhost"
 	}
-	
+
 	solr_port := 8983
 	port := os.Getenv("SOLR_PORT")
 	if port == "" {
@@ -48,19 +48,18 @@ func NewSolrAdapter(route *router.Route) (a router.LogAdapter, err error) {
 			return nil, err
 		}
 	}
-	
+
 	solr_collectionname := "collection1"
 	collectionname := os.Getenv("SOLR_COLLECTIONNAME")
 	if collectionname == "" {
 		solr_collectionname = collectionname
 	}
-	
+
 	solrconn, err := solr.Init(hostname, solr_port, solr_collectionname)
-	
 	if err != nil {
 		return nil, err
 	}
-	
+
 	return &SolrAdapter{
 		conn:       solrconn,
 		route:      route,
@@ -214,17 +213,14 @@ func (a *SolrAdapter) Stream(logstream chan *router.Message) { //nolint:gocyclo
 		js = append(js, byte('\n'))
 
 		for {
-			
 			// build an update document, in this case adding two documents
 			f := map[string]interface{}{
 				"add": []interface{}{
 					map[string]interface{}{"id": time.Now().Unix(), "data": js},
 				},
 			}
-		
 			// send off the update (2nd parameter indicates we also want to commit the operation)
 			_, err := a.conn.Update(f, true)
-			
 			if err == nil {
 				break
 			}
@@ -234,13 +230,11 @@ func (a *SolrAdapter) Stream(logstream chan *router.Message) { //nolint:gocyclo
 			} else {
 				time.Sleep(2 * time.Second)
 			}
-		
 			// if err != nil {
 			// 	fmt.Println("error =>", err)
 			// } else {
 			// 	fmt.Println("resp =>", resp)
 			// }
-			
 			// _, err := a.conn.U(js)
 
 			// if err == nil {
