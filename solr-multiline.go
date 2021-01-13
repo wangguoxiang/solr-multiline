@@ -1,4 +1,4 @@
-package solr-multiline
+package logstash
 
 import (
 	//"errors"
