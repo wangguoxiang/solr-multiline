@@ -42,7 +42,7 @@ func NewSolrAdapter(route *router.Route) (a router.LogAdapter, err error) {
 
 	solr_port := 8983
 	port := os.Getenv("SOLR_PORT")
-	if port == "" {
+	if port != "" {
 		solr_port, err = strconv.Atoi(port)
 		if err != nil {
 			return nil, err
@@ -51,7 +51,7 @@ func NewSolrAdapter(route *router.Route) (a router.LogAdapter, err error) {
 
 	solr_collectionname := "collection1"
 	collectionname := os.Getenv("SOLR_COLLECTIONNAME")
-	if collectionname == "" {
+	if collectionname != "" {
 		solr_collectionname = collectionname
 	}
 
