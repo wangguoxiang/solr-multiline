@@ -20,7 +20,7 @@ import (
 
 
 func init() {
-	router.AdapterFactories.Register(NewSolrAdapter, "solr-multiline")
+	router.AdapterFactories.Register(NewSolrAdapter, "solr")
 }
 
 
