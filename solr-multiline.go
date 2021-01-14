@@ -158,6 +158,7 @@ func GetContainerHostname(c *docker.Container) string {
 // Stream sends log data to the next adapter
 func (a *SolrAdapter) Stream(logstream chan *router.Message) { //nolint:gocyclo
 	for m := range logstream {
+		log.Println("stream:", m)
 		dockerInfo := DockerInfo{
 			Name:     m.Container.Name,
 			ID:       m.Container.ID,
@@ -209,6 +210,7 @@ func (a *SolrAdapter) Stream(logstream chan *router.Message) { //nolint:gocyclo
 			continue
 		}
 
+	       log.Println("data:", js)
 		// To work with tls and tcp transports via json_lines codec
 		js = append(js, byte('\n'))
 
