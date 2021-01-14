@@ -165,7 +165,7 @@ func (a *SolrAdapter) Stream(logstream chan *router.Message) { //nolint:gocyclo
 			Image:    m.Container.Config.Image,
 			Hostname: GetContainerHostname(m.Container),
 		}
-		log.Println("docker info:", dockerInfo)
+		//log.Println("docker info:", dockerInfo)
 		// Check if we are sending logs for this container
 		if !containerIncluded(dockerInfo.Name) {
 			continue
@@ -181,7 +181,7 @@ func (a *SolrAdapter) Stream(logstream chan *router.Message) { //nolint:gocyclo
 		tags := GetContainerTags(m.Container, a)
 		fields := GetLogstashFields(m.Container, a)
 
-		var js []byte
+		//var js []byte
 		var data map[string]interface{}
 		var err error
 
@@ -203,22 +203,23 @@ func (a *SolrAdapter) Stream(logstream chan *router.Message) { //nolint:gocyclo
 		data["stream"] = m.Source
 		data["tags"] = tags
 
+	        //log.Println("data1:", js)
 		// Return the JSON encoding
-		if js, err = json.Marshal(data); err != nil {
+		//if js, err = json.Marshal(data); err != nil {
 			// Log error message and continue parsing next line, if marshalling fails
-			log.Println("logstash: could not marshal JSON:", err)
-			continue
-		}
+		//	log.Println("logstash: could not marshal JSON:", err)
+		//	continue
+		//}
 
-	       log.Println("data:", js)
+                //log.Println("data:", js)
 		// To work with tls and tcp transports via json_lines codec
-		js = append(js, byte('\n'))
+		//js = append(js, byte('\n'))
 
 		for {
 			// build an update document, in this case adding two documents
 			f := map[string]interface{}{
 				"add": []interface{}{
-					map[string]interface{}{"id": time.Now().Unix(), "data": js},
+					map[string]interface{}{"id": time.Now().Unix(), "data": data["message"]},
 				},
 			}
 			// send off the update (2nd parameter indicates we also want to commit the operation)
