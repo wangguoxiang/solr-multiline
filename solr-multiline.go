@@ -158,14 +158,14 @@ func GetContainerHostname(c *docker.Container) string {
 // Stream sends log data to the next adapter
 func (a *SolrAdapter) Stream(logstream chan *router.Message) { //nolint:gocyclo
 	for m := range logstream {
-		log.Println("stream:", append(marshal(m)))
+
 		dockerInfo := DockerInfo{
 			Name:     m.Container.Name,
 			ID:       m.Container.ID,
 			Image:    m.Container.Config.Image,
 			Hostname: GetContainerHostname(m.Container),
 		}
-
+		log.Println("docker info:", dockerInfo)
 		// Check if we are sending logs for this container
 		if !containerIncluded(dockerInfo.Name) {
 			continue
