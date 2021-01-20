@@ -157,7 +157,7 @@ func GetContainerHostname(c *docker.Container) string {
 
 func makeTimestamp() int64 {
     return time.Now().UnixNano() / int64(time.Millisecond)
-
+}
 
 // Stream sends log data to the next adapter
 func (a *SolrAdapter) Stream(logstream chan *router.Message) { //nolint:gocyclo
@@ -203,11 +203,14 @@ func (a *SolrAdapter) Stream(logstream chan *router.Message) { //nolint:gocyclo
 			data[k] = v
 		}
 
-		data["docker"] = dockerInfo
+		//data["docker"] = dockerInfo
+		data["hostname"] = dockerInfo.Hostname
+		data["name"] = dockerInfo.Name
 		data["stream"] = m.Source
 		data["tags"] = tags
 
-	        //log.Println("data1:", js)
+		log.Println("dockerinfo:", dockerInfo)
+	    //log.Println("data1:", js)
 		// Return the JSON encoding
 		//if js, err = json.Marshal(data); err != nil {
 			// Log error message and continue parsing next line, if marshalling fails
@@ -226,8 +229,8 @@ func (a *SolrAdapter) Stream(logstream chan *router.Message) { //nolint:gocyclo
 					map[string]interface{}{
 					"id": makeTimestamp(),
 					"packet_content": data["message"],
-					"types": data["docker"].Name,
-					"hostname": data["docker"].Hostname,
+					"types": data["name"],
+					"hostname": data["hostname"],
 					},
 				},
 			}
