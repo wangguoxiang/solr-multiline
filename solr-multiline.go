@@ -155,6 +155,10 @@ func GetContainerHostname(c *docker.Container) string {
 	return c.Config.Hostname
 }
 
+func makeTimestamp() int64 {
+    return time.Now().UnixNano() / int64(time.Millisecond)
+
+
 // Stream sends log data to the next adapter
 func (a *SolrAdapter) Stream(logstream chan *router.Message) { //nolint:gocyclo
 	for m := range logstream {
@@ -219,7 +223,12 @@ func (a *SolrAdapter) Stream(logstream chan *router.Message) { //nolint:gocyclo
 			// build an update document, in this case adding two documents
 			f := map[string]interface{}{
 				"add": []interface{}{
-					map[string]interface{}{"id": time.Now().Unix(), "data": data["message"]},
+					map[string]interface{}{
+					"id": makeTimestamp(),
+					"packet_content": data["message"],
+					"types": data["docker"].Name,
+					"hostname": data["docker"].Hostname,
+					},
 				},
 			}
 			// send off the update (2nd parameter indicates we also want to commit the operation)
