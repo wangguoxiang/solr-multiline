@@ -238,6 +238,7 @@ func (a *SolrAdapter) Stream(logstream chan *router.Message) { //nolint:gocyclo
 					"packet_content": data["message"],
 					"types": data["name"],
 					"hostname": data["hostname"],
+					"dateint": time.Now().Unix(),
 					},
 				},
 			}
