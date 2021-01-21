@@ -28,6 +28,7 @@ func init() {
 type SolrAdapter struct {
 	conn           *solr.Connection
 	route          *router.Route
+	hostname       string
 	containerTags  map[string][]string
 	logstashFields map[string]map[string]string
 	decodeJsonLogs map[string]bool
@@ -63,6 +64,7 @@ func NewSolrAdapter(route *router.Route) (a router.LogAdapter, err error) {
 	return &SolrAdapter{
 		conn:       solrconn,
 		route:      route,
+		hostname:   hostname,
 		containerTags:  make(map[string][]string),
 		logstashFields: make(map[string]map[string]string),
 		decodeJsonLogs: make(map[string]bool),
@@ -204,13 +206,18 @@ func (a *SolrAdapter) Stream(logstream chan *router.Message) { //nolint:gocyclo
 		}
 
 		//data["docker"] = dockerInfo
-		data["hostname"] = dockerInfo.Hostname
-		data["name"] = dockerInfo.Name
-		data["stream"] = m.Source
-		data["tags"] = tags
+		reg := regexp.MustCompile(`[\w-]+`)
+                strmap := reg.FindAllString(dockerInfo.Name, -1)
+                log.Printf("%q\n", strmap)
+
+                //data["docker"] = dockerInfo
+                data["hostname"] = a.hostname
+                data["name"] = strmap[0]
+                data["stream"] = m.Source
+                data["tags"] = tags
 
 		log.Println("dockerinfo:", dockerInfo)
-	    //log.Println("data1:", js)
+	        //log.Println("data1:", js)
 		// Return the JSON encoding
 		//if js, err = json.Marshal(data); err != nil {
 			// Log error message and continue parsing next line, if marshalling fails
@@ -245,22 +252,6 @@ func (a *SolrAdapter) Stream(logstream chan *router.Message) { //nolint:gocyclo
 			} else {
 				time.Sleep(2 * time.Second)
 			}
-			// if err != nil {
-			// 	fmt.Println("error =>", err)
-			// } else {
-			// 	fmt.Println("resp =>", resp)
-			// }
-			// _, err := a.conn.U(js)
-
-			// if err == nil {
-			// 	break
-			// }
-
-			// if os.Getenv("RETRY_SEND") == "" {
-			// 	log.Fatal("logstash: could not write:", err)
-			// } else {
-			// 	time.Sleep(2 * time.Second)
-			// }
 		}
 	}
 }
