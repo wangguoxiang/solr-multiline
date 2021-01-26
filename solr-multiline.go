@@ -9,7 +9,7 @@ import (
 	//"sync"
 	"time"
 	"io/ioutil"
-	"encoding/json"
+	//"encoding/json"
 	"log"
 
 	docker "github.com/fsouza/go-dockerclient"
@@ -184,64 +184,73 @@ func (a *SolrAdapter) Stream(logstream chan *router.Message) { //nolint:gocyclo
 			}
 		}
 
-		tags := GetContainerTags(m.Container, a)
-		fields := GetLogstashFields(m.Container, a)
+		// tags := GetContainerTags(m.Container, a)
+		// fields := GetLogstashFields(m.Container, a)
 
 		//var js []byte
-		var data map[string]interface{}
-		var err error
+		var updatereq UpdateReq
+		//var data map[string]interface{}
+		//var err error
 
 		// Try to parse JSON-encoded m.Data. If it wasn't JSON, create an empty object
 		// and use the original data as the message.
-		if IsDecodeJsonLogs(m.Container, a) {
-			err = json.Unmarshal([]byte(m.Data), &data)
-		}
-		if err != nil || data == nil {
-			data = make(map[string]interface{})
-			data["message"] = m.Data
-		}
+		// if IsDecodeJsonLogs(m.Container, a) {
+		// 	err = json.Unmarshal([]byte(m.Data), &data)
+		// }
+		// if err != nil || data == nil {
+		// 	data = make(map[string]interface{})
+		// 	data["message"] = m.Data
+		// }
 
-		for k, v := range fields {
-			data[k] = v
-		}
+		// for k, v := range fields {
+		// 	data[k] = v
+		// }
 
 		//data["docker"] = dockerInfo
 		reg := regexp.MustCompile(`[\w-]+`)
-                strmap := reg.FindAllString(dockerInfo.Name, -1)
-                log.Printf("%q\n", strmap)
+        strmap := reg.FindAllString(dockerInfo.Name, -1)
+        log.Printf("%q\n", strmap)
+        
+        updatereq.PacketContent = m.Data
+        updatereq.Hostname = a.hostname
+        updatereq.Types = strmap[0]
+        updatereq.Dateint = time.Now().Unix()
+        updatereq.ID = makeTimestamp()
 
-                //data["docker"] = dockerInfo
-                data["hostname"] = a.hostname
-                data["name"] = strmap[0]
-                data["stream"] = m.Source
-                data["tags"] = tags
+        //data["docker"] = dockerInfo
+        // data["hostname"] = a.hostname
+        // data["name"] = strmap[0]
+        // data["stream"] = m.Source
+        // data["tags"] = tags
 
-		log.Println("dockerinfo:", dockerInfo)
-	        //log.Println("data1:", js)
-		// Return the JSON encoding
-		//if js, err = json.Marshal(data); err != nil {
-			// Log error message and continue parsing next line, if marshalling fails
-		//	log.Println("logstash: could not marshal JSON:", err)
-		//	continue
-		//}
+		// log.Println("dockerinfo:", dockerInfo)
+	 //        //log.Println("data1:", js)
+		// // Return the JSON encoding
+		// if js, err = json.Marshal(data[message]); err != nil {
+		// 	// Log error message and continue parsing next line, if marshalling fails
+		// 	log.Println("logstash: could not marshal JSON:", err)
+		// 	continue
+		// }
 
-                //log.Println("data:", js)
 		// To work with tls and tcp transports via json_lines codec
 		//js = append(js, byte('\n'))
+		
+		//log.Println("js:%v", js)
 
 		for {
 			// build an update document, in this case adding two documents
-			f := map[string]interface{}{
-				"add": []interface{}{
-					map[string]interface{}{
-					"id": makeTimestamp(),
-					"packet_content": data["message"],
-					"types": data["name"],
-					"hostname": data["hostname"],
-					"dateint": time.Now().Unix(),
-					},
-				},
-			}
+			// f := map[string]interface{}{
+			// 	"add": []interface{}{
+			// 		map[string]interface{}{
+			// 		"id": makeTimestamp(),
+			// 		"packet_content": data["message"],
+			// 		"types": data["name"],
+			// 		"hostname": data["hostname"],
+			// 		"dateint": time.Now().Unix(),
+			// 		},
+			// 	},
+			// }
+			f := map[string]interface{}{ "add": updatereq }
 			// send off the update (2nd parameter indicates we also want to commit the operation)
 			_, err := a.conn.Update(f, true)
 			if err == nil {
@@ -289,4 +298,13 @@ type DockerInfo struct {
 	Image    string            `json:"image"`
 	Hostname string            `json:"hostname"`
 	Labels   map[string]string `json:"labels"`
+}
+
+type UpdateReq struct {
+	ID int64  `json:"id"`
+	PacketContent string `json:"packet_content"`
+	Types string `json:"types"`
+	Hostname string `json:"hostname"`
+	Dateint int64 `json:"dateint"`
+	Version       uint64 `json:"_version_"`
 }
