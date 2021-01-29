@@ -208,23 +208,22 @@ func (a *SolrAdapter) Stream(logstream chan *router.Message) { //nolint:gocyclo
 
 		//data["docker"] = dockerInfo
 		reg := regexp.MustCompile(`[\w-]+`)
-        strmap := reg.FindAllString(dockerInfo.Name, -1)
-        log.Printf("%q\n", strmap)
-        
-        updatereq.PacketContent = m.Data
-        updatereq.Hostname = a.hostname
-        updatereq.Types = strmap[0]
-        updatereq.Dateint = time.Now().Unix()
-        updatereq.ID = makeTimestamp()
+                strmap := reg.FindAllString(dockerInfo.Name, -1)
+                log.Printf("%q\n", strmap)
+                updatereq.PacketContent = m.Data
+                updatereq.Hostname = a.hostname
+                updatereq.Types = strmap[0]
+                updatereq.Dateint = time.Now().Unix()
+                updatereq.ID = makeTimestamp()
 
-        //data["docker"] = dockerInfo
-        // data["hostname"] = a.hostname
-        // data["name"] = strmap[0]
-        // data["stream"] = m.Source
-        // data["tags"] = tags
+                //data["docker"] = dockerInfo
+                // data["hostname"] = a.hostname
+                // data["name"] = strmap[0]
+                // data["stream"] = m.Source
+                // data["tags"] = tags
 
 		// log.Println("dockerinfo:", dockerInfo)
-	 //        //log.Println("data1:", js)
+	        //log.Println("data1:", js)
 		// // Return the JSON encoding
 		// if js, err = json.Marshal(data[message]); err != nil {
 		// 	// Log error message and continue parsing next line, if marshalling fails
@@ -234,7 +233,6 @@ func (a *SolrAdapter) Stream(logstream chan *router.Message) { //nolint:gocyclo
 
 		// To work with tls and tcp transports via json_lines codec
 		//js = append(js, byte('\n'))
-		
 		//log.Println("js:%v", js)
 
 		for {
@@ -301,10 +299,10 @@ type DockerInfo struct {
 }
 
 type UpdateReq struct {
-	ID int64  `json:"id"`
+	ID string  `json:"id"`
 	PacketContent string `json:"packet_content"`
 	Types string `json:"types"`
 	Hostname string `json:"hostname"`
-	Dateint int64 `json:"dateint"`
+	Dateint string `json:"dateint"`
 	Version       uint64 `json:"_version_"`
 }
