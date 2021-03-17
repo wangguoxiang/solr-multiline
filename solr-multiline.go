@@ -208,47 +208,18 @@ func (a *SolrAdapter) Stream(logstream chan *router.Message) { //nolint:gocyclo
 
 		//data["docker"] = dockerInfo
 		reg := regexp.MustCompile(`[\w-]+`)
-                strmap := reg.FindAllString(dockerInfo.Name, -1)
-                log.Printf("%q\n", strmap)
-                updatereq.PacketContent = m.Data
-                updatereq.Hostname = a.hostname
-                updatereq.Types = strmap[0]
-                updatereq.Dateint = time.Now().Unix()
-                updatereq.ID = makeTimestamp()
-
-                //data["docker"] = dockerInfo
-                // data["hostname"] = a.hostname
-                // data["name"] = strmap[0]
-                // data["stream"] = m.Source
-                // data["tags"] = tags
-
-		// log.Println("dockerinfo:", dockerInfo)
-	        //log.Println("data1:", js)
-		// // Return the JSON encoding
-		// if js, err = json.Marshal(data[message]); err != nil {
-		// 	// Log error message and continue parsing next line, if marshalling fails
-		// 	log.Println("logstash: could not marshal JSON:", err)
-		// 	continue
-		// }
-
-		// To work with tls and tcp transports via json_lines codec
-		//js = append(js, byte('\n'))
-		//log.Println("js:%v", js)
-
+        strmap := reg.FindAllString(dockerInfo.Name, -1)
+        log.Printf("%q\n", strmap)
+        updatereq.PacketContent = strmap[0] + m.Data
+        updatereq.Hostname = a.hostname
+        updatereq.Types = strmap[0]
+        updatereq.Dateint = strconv.FormatInt(time.Now().Unix(),10)
+        updatereq.ID = strconv.FormatInt(makeTimestamp(),10)
+        
 		for {
 			// build an update document, in this case adding two documents
-			// f := map[string]interface{}{
-			// 	"add": []interface{}{
-			// 		map[string]interface{}{
-			// 		"id": makeTimestamp(),
-			// 		"packet_content": data["message"],
-			// 		"types": data["name"],
-			// 		"hostname": data["hostname"],
-			// 		"dateint": time.Now().Unix(),
-			// 		},
-			// 	},
-			// }
-			f := map[string]interface{}{ "add": updatereq }
+		
+			f := map[string]interface{}{ "add": []interface{}{updatereq}}
 			// send off the update (2nd parameter indicates we also want to commit the operation)
 			_, err := a.conn.Update(f, true)
 			if err == nil {
