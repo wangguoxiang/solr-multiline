@@ -208,17 +208,15 @@ func (a *SolrAdapter) Stream(logstream chan *router.Message) { //nolint:gocyclo
 
 		//data["docker"] = dockerInfo
 		reg := regexp.MustCompile(`[\w-]+`)
-        strmap := reg.FindAllString(dockerInfo.Name, -1)
-        log.Printf("%q\n", strmap)
-        updatereq.PacketContent = strmap[0] + m.Data
-        updatereq.Hostname = a.hostname
-        updatereq.Types = strmap[0]
-        updatereq.Dateint = strconv.FormatInt(time.Now().Unix(),10)
-        updatereq.ID = strconv.FormatInt(makeTimestamp(),10)
-        
+                strmap := reg.FindAllString(dockerInfo.Name, -1)
+                log.Printf("%q\n", strmap)
+                updatereq.PacketContent = strmap[0] + m.Data
+                updatereq.Hostname = a.hostname
+                updatereq.Types = strmap[0]
+                updatereq.Dateint = strconv.FormatInt(time.Now().Unix(),10)
+                updatereq.ID = strconv.FormatInt(makeTimestamp(),10)
 		for {
 			// build an update document, in this case adding two documents
-		
 			f := map[string]interface{}{ "add": []interface{}{updatereq}}
 			// send off the update (2nd parameter indicates we also want to commit the operation)
 			_, err := a.conn.Update(f, true)
