@@ -209,7 +209,7 @@ func (a *SolrAdapter) Stream(logstream chan *router.Message) { //nolint:gocyclo
 		//data["docker"] = dockerInfo
 		reg := regexp.MustCompile(`[\w-]+`)
                 strmap := reg.FindAllString(dockerInfo.Name, -1)
-                log.Printf("%q\n", strmap)
+		//log.Printf("%q\n", strmap)
                 updatereq.PacketContent = strmap[0] + m.Data
                 updatereq.Hostname = a.hostname
                 updatereq.Types = strmap[0]
