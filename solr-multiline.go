@@ -9,7 +9,7 @@ import (
 	//"sync"
 	"time"
 	"io/ioutil"
-	"encoding/json"
+	//"encoding/json"
 	"log"
 
 	docker "github.com/fsouza/go-dockerclient"
@@ -28,6 +28,7 @@ func init() {
 type SolrAdapter struct {
 	conn           *solr.Connection
 	route          *router.Route
+	hostname       string
 	containerTags  map[string][]string
 	logstashFields map[string]map[string]string
 	decodeJsonLogs map[string]bool
@@ -42,7 +43,7 @@ func NewSolrAdapter(route *router.Route) (a router.LogAdapter, err error) {
 
 	solr_port := 8983
 	port := os.Getenv("SOLR_PORT")
-	if port == "" {
+	if port != "" {
 		solr_port, err = strconv.Atoi(port)
 		if err != nil {
 			return nil, err
@@ -51,7 +52,7 @@ func NewSolrAdapter(route *router.Route) (a router.LogAdapter, err error) {
 
 	solr_collectionname := "collection1"
 	collectionname := os.Getenv("SOLR_COLLECTIONNAME")
-	if collectionname == "" {
+	if collectionname != "" {
 		solr_collectionname = collectionname
 	}
 
@@ -63,6 +64,7 @@ func NewSolrAdapter(route *router.Route) (a router.LogAdapter, err error) {
 	return &SolrAdapter{
 		conn:       solrconn,
 		route:      route,
+		hostname:   hostname,
 		containerTags:  make(map[string][]string),
 		logstashFields: make(map[string]map[string]string),
 		decodeJsonLogs: make(map[string]bool),
@@ -155,16 +157,21 @@ func GetContainerHostname(c *docker.Container) string {
 	return c.Config.Hostname
 }
 
+func makeTimestamp() int64 {
+    return time.Now().UnixNano() / int64(time.Millisecond)
+}
+
 // Stream sends log data to the next adapter
 func (a *SolrAdapter) Stream(logstream chan *router.Message) { //nolint:gocyclo
 	for m := range logstream {
+
 		dockerInfo := DockerInfo{
 			Name:     m.Container.Name,
 			ID:       m.Container.ID,
 			Image:    m.Container.Config.Image,
 			Hostname: GetContainerHostname(m.Container),
 		}
-
+		//log.Println("docker info:", dockerInfo)
 		// Check if we are sending logs for this container
 		if !containerIncluded(dockerInfo.Name) {
 			continue
@@ -177,48 +184,42 @@ func (a *SolrAdapter) Stream(logstream chan *router.Message) { //nolint:gocyclo
 			}
 		}
 
-		tags := GetContainerTags(m.Container, a)
-		fields := GetLogstashFields(m.Container, a)
+		// tags := GetContainerTags(m.Container, a)
+		// fields := GetLogstashFields(m.Container, a)
 
-		var js []byte
-		var data map[string]interface{}
-		var err error
+		//var js []byte
+		var updatereq UpdateReq
+		//var data map[string]interface{}
+		//var err error
 
 		// Try to parse JSON-encoded m.Data. If it wasn't JSON, create an empty object
 		// and use the original data as the message.
-		if IsDecodeJsonLogs(m.Container, a) {
-			err = json.Unmarshal([]byte(m.Data), &data)
-		}
-		if err != nil || data == nil {
-			data = make(map[string]interface{})
-			data["message"] = m.Data
-		}
+		// if IsDecodeJsonLogs(m.Container, a) {
+		// 	err = json.Unmarshal([]byte(m.Data), &data)
+		// }
+		// if err != nil || data == nil {
+		// 	data = make(map[string]interface{})
+		// 	data["message"] = m.Data
+		// }
 
-		for k, v := range fields {
-			data[k] = v
-		}
+		// for k, v := range fields {
+		// 	data[k] = v
+		// }
 
-		data["docker"] = dockerInfo
-		data["stream"] = m.Source
-		data["tags"] = tags
-
-		// Return the JSON encoding
-		if js, err = json.Marshal(data); err != nil {
-			// Log error message and continue parsing next line, if marshalling fails
-			log.Println("logstash: could not marshal JSON:", err)
-			continue
-		}
-
-		// To work with tls and tcp transports via json_lines codec
-		js = append(js, byte('\n'))
-
+		//data["docker"] = dockerInfo
+		reg := regexp.MustCompile(`[\w-]+`)
+        strmap := reg.FindAllString(dockerInfo.Name, -1)
+        log.Printf("%q\n", strmap)
+        updatereq.PacketContent = strmap[0] + m.Data
+        updatereq.Hostname = a.hostname
+        updatereq.Types = strmap[0]
+        updatereq.Dateint = strconv.FormatInt(time.Now().Unix(),10)
+        updatereq.ID = strconv.FormatInt(makeTimestamp(),10)
+        
 		for {
 			// build an update document, in this case adding two documents
-			f := map[string]interface{}{
-				"add": []interface{}{
-					map[string]interface{}{"id": time.Now().Unix(), "data": js},
-				},
-			}
+		
+			f := map[string]interface{}{ "add": []interface{}{updatereq}}
 			// send off the update (2nd parameter indicates we also want to commit the operation)
 			_, err := a.conn.Update(f, true)
 			if err == nil {
@@ -230,22 +231,6 @@ func (a *SolrAdapter) Stream(logstream chan *router.Message) { //nolint:gocyclo
 			} else {
 				time.Sleep(2 * time.Second)
 			}
-			// if err != nil {
-			// 	fmt.Println("error =>", err)
-			// } else {
-			// 	fmt.Println("resp =>", resp)
-			// }
-			// _, err := a.conn.U(js)
-
-			// if err == nil {
-			// 	break
-			// }
-
-			// if os.Getenv("RETRY_SEND") == "" {
-			// 	log.Fatal("logstash: could not write:", err)
-			// } else {
-			// 	time.Sleep(2 * time.Second)
-			// }
 		}
 	}
 }
@@ -282,4 +267,13 @@ type DockerInfo struct {
 	Image    string            `json:"image"`
 	Hostname string            `json:"hostname"`
 	Labels   map[string]string `json:"labels"`
+}
+
+type UpdateReq struct {
+	ID string  `json:"id"`
+	PacketContent string `json:"packet_content"`
+	Types string `json:"types"`
+	Hostname string `json:"hostname"`
+	Dateint string `json:"dateint"`
+	Version       uint64 `json:"_version_"`
 }
